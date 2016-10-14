@@ -1,0 +1,23 @@
+body {
+	background-color: black;
+}
+
+h1 {
+	font-weight: bold;
+	text-align: center;
+	font-family: sans-serif;
+	font-size: 40px;
+	color: #426820;
+}
+
+#movie_quotes {
+	color: white;
+	font-style: italic;
+	font-size: 24px;
+	text-align: center;
+}
+
+video {
+	display: block;
+	margin: 0 auto;
+}
