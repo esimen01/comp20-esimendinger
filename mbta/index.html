@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+    	<meta name="viewport" content="initial-scale=1.0">
+		<link rel="stylesheet" href="style.css" type="text/css" />
+		<title>MBTA Red Line Schedule</title>
+	</head>
+
+	<body>
+    	<div id="map"></div>
+    	<script>
+      		var map;
+      		function initMap() {
+        	map = new google.maps.Map(document.getElementById('map'), {
+         	center: {lat: 42.406, lng: -71.119},
+         	zoom: 11
+    		});
+    		}
+    	</script>
+    	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBbQKmewBFyICkdY2XCgSiQnWhBMzc7jRo&callback=initMap"
+    	async defer></script>
+	</body>
