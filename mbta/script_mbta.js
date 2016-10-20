@@ -26,6 +26,10 @@ var stops = [
 	["Quincy Adams", 42.233391, -71.007153, 4],
 	["Braintree", 42.2078543, -71.0011385, 19]
 ];
+var closestStation;
+var closestLine = false;
+var minIdx;
+var minDist = 1000000;
 
 
 
@@ -41,7 +45,6 @@ function initMap() {
 	});
 	myLoc = getMyLocation();
 	addMarkers();
-	addPolylines();
 };
 
 function getMyLocation() {
@@ -53,10 +56,9 @@ function getMyLocation() {
 			};
 			map.setCenter(myLoc);
 
-//			infoWindow.setPosition(myLoc);
-//			infoWindow.setContent("Location found!");
-
 			addMyMarker();
+			findClosestStation();
+			addPolylines();
 		});
 	} else {
 		alert("Location not found, geolocation not supported.");
@@ -125,13 +127,12 @@ function addMyMarker() {
 		zIndex: 23
 	});
 
-
 	google.maps.event.addListener(hereMarker, 'click', function() {
 		if (openWindow) {
 			openWindow.close();
 		}
-	//	infoWindow.setPosition(hereMarker.position);
-		infoWindow.setContent("To MBTA:");
+		infoWindow.setContent("The closest Red Line station to you is " +
+			closestStation[0] + ", at " + closestStation[1] + " miles away.");
 		infoWindow.open(map, hereMarker);
 		openWindow = infoWindow;
 	});
@@ -185,4 +186,43 @@ function addPolylines() {
 
 	lineAshmont.setMap(map);
 	lineBraintree.setMap(map);
+
+	closestLine = new google.maps.Polyline({
+		path: [myLoc, {lat: stops[minIdx][1], lng: stops[minIdx][2]}],
+		geodesic: true,
+		strokeColor: '#0077ff',
+		strokeOpacity: 1.0,
+		strokeWeight: 10
+	});
+
+	closestLine.setMap(map);
 };
+
+function toRadians(x) {
+	return x * Math.PI / 180;
+}
+
+function findClosestStation() {
+	for (i = 0; i < stops.length; i++) {
+		var dist = haversine(toRadians(myLoc.lat), toRadians(myLoc.lng),
+							toRadians(stops[i][1]), toRadians(stops[i][2]));
+		if (dist < minDist) {
+			minDist = dist;
+			minIdx = i;
+		}
+	}
+
+	closestStation = [stops[minIdx][0], Math.round(minDist * 1000) / 1000];
+};
+
+function haversine(lat1, lng1, lat2, lng2) {
+	var distLat = lat2 - lat1;
+	var distLng = lng2 - lng1;
+	var a = Math.sin(distLat / 2) * Math.sin(distLat / 2) +
+			Math.cos(lat1) * Math.cos(lat2) *
+			Math.sin(distLng / 2) * Math.sin(distLat / 2);
+	var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+	var d = 6371 * c;
+
+	return d;
+}
