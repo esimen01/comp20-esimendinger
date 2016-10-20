@@ -32,6 +32,7 @@ var minIdx;
 var minDist = 1000000;
 var request = new XMLHttpRequest();
 var trains = false;
+var err404 = false;
 
 // var idk = [];
 // idk.push("one");
@@ -107,10 +108,20 @@ function addMarkers() {
 					openWindow.close();
 				}
 				getApiData(marker, i, function(data) {
-					trainInfo(marker, i);
+					if (request.status === 404) {
+						if (openWindow) {
+							openWindow.close();
+						}
+						infoWindow.setContent("404: Try again!");
+						infoWindow.open(map, marker);
+						openWindow = infoWindow;
+					}
+					if (trains != false) {
+						trainInfo(marker, i);
+						infoWindow.open(map, marker);
+						openWindow = infoWindow;
+					}
 				});
-				infoWindow.open(map, marker);
-				openWindow = infoWindow;
 			});
 		})(marker, i);
 	}
@@ -118,17 +129,21 @@ function addMarkers() {
 
 function getApiData(marker, i, callback) {
 	request.onreadystatechange = function() {
+		console.log(request.status);
 		if (request.readyState === 4 && request.status === 200) {
 			if (request.responseText != "" && (request.responseText)) {
+				console.log("made it to parse");
 				trains = JSON.parse(request.responseText);
 				callback(request.responseText);
 			} else {
+				console.log("not found!");
 				callback(false);
 			}
 		} else if (request.status === 404) {
 			if (openWindow) {
 				openWindow.close();
 			}
+			err404 = true;
 			infoWindow.setContent("404: Try again!");
 			infoWindow.open(map, marker);
 			openWindow = infoWindow;
