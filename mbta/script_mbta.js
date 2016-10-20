@@ -30,6 +30,15 @@ var closestStation;
 var closestLine = false;
 var minIdx;
 var minDist = 1000000;
+var request = new XMLHttpRequest();
+var trains = false;
+
+// var idk = [];
+// idk.push("one");
+// idk.push("two");
+// idk.push("three");
+// idk.sort();
+// console.log(idk);
 
 
 
@@ -97,11 +106,63 @@ function addMarkers() {
 				if (openWindow) {
 					openWindow.close();
 				}
-				infoWindow.setContent("click!");
+				getApiData(marker, i, function(data) {
+					trainInfo(marker, i);
+				});
 				infoWindow.open(map, marker);
 				openWindow = infoWindow;
 			});
 		})(marker, i);
+	}
+}
+
+function getApiData(marker, i, callback) {
+	request.onreadystatechange = function() {
+		if (request.readyState === 4 && request.status === 200) {
+			if (request.responseText != "" && (request.responseText)) {
+				trains = JSON.parse(request.responseText);
+				callback(request.responseText);
+			} else {
+				callback(false);
+			}
+		} else if (request.status === 404) {
+			if (openWindow) {
+				openWindow.close();
+			}
+			infoWindow.setContent("404: Try again!");
+			infoWindow.open(map, marker);
+			openWindow = infoWindow;
+			return;
+		}
+	}
+	request.open("get", "https://rocky-taiga-26352.herokuapp.com/redline.json", true);
+	request.send();
+};
+
+// function getTrainSchedule(marker, i) {
+// 	getApiData(marker, i, function() {
+// 		console.log(this);
+// 		// if (trains !== false) {
+// 		// 	console.log("3");
+// 		// 	callback(trainInfo(marker, i));
+// 		// } else {
+// 		// 	console.log("4");
+// 		// 	callback(false);
+// 		// }
+// 	});
+// }
+
+function trainInfo(marker, i) {
+	if (request.readyState == 4 && request.status == 200) {
+		trains = JSON.parse(request.responseText);
+			console.log("Trains at: " + marker.title);
+		for (var i = 0; i < trains.TripList.Trips.length; i++) {
+			for (var j = 0; j < trains.TripList.Trips[i].Predictions.length; j++) {
+				if(trains.TripList.Trips[i].Predictions[j].Stop == marker.title) {
+					console.log(trains.TripList.Trips[i].Predictions[j].Seconds)
+				}
+			}
+		}
 	}
 }
 
