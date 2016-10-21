@@ -1,6 +1,10 @@
+// Edward Simendinger
+// MBTA Red Line interactive map javascript
+// 21 October 2016
+
 var map;
 var infoWindow;
-var openWindow = false;
+var openWindow = false;		// is there an infowindow open?
 var myLoc;
 var stops = [
 	["Alewife", 42.395428, -71.142483, 21],
@@ -32,12 +36,9 @@ var minIdx;
 var minDist = 1000000;
 var request = new XMLHttpRequest();
 var trains = false;
-var err404 = false;
 var schedule;
 
-
-
-
+// build basic map
 function initMap() {
 	myLoc = {lat: stops[9][1], lng: stops[9][2]}
 	map = new google.maps.Map(document.getElementById("map"), {
@@ -51,8 +52,9 @@ function initMap() {
 	addMarkers();
 };
 
+// use geolocator to find your location
 function getMyLocation() {
-	if (navigator.geolocation) { // the navigator.geolocation object is supported on your browser
+	if (navigator.geolocation) {
 		navigator.geolocation.getCurrentPosition(function(position) {
 			myLoc = {
 				lat: position.coords.latitude,
@@ -70,188 +72,7 @@ function getMyLocation() {
 	return myLoc;
 }
 
-function addMarkers() {
-	var icon = {
-		url: "icon.png",
-		size: new google.maps.Size(20, 20),
-		origin: new google.maps.Point(0, 0),
-		anchor: new google.maps.Point(10, 10)
-	};
-
-	var iconShape = {
-		coords: [1, 10,  10, 1,  19, 10,  10, 19],
-		type: "poly"
-	};
-
-	var marker
-
-	for (var i = 0; i < stops.length; i++) {
-		var stop = stops[i];
-		marker = new google.maps.Marker({
-			position: {lat: stop[1], lng: stop[2]},
-			map: map,
-			icon: icon,
-			shape: iconShape,
-			title: stop[0],
-			zIndex: stop[3]
-		});
-
-		(function(marker, i) {
-			google.maps.event.addListener(marker, "click", function() {
-				if (openWindow) {
-					openWindow.close();
-				}
-				getApiData(marker, i, function(data) {
-					if (trains != false) {
-						trainInfo(marker, i);
-						infoWindow.open(map, marker);
-						openWindow = infoWindow;
-					}
-				});
-			});
-		})(marker, i);
-	}
-}
-
-function getApiData(marker, i, callback) {
-	request.onreadystatechange = function() {
-		if (request.readyState === 4 && request.status === 200) {
-			if (request.responseText != "" && (request.responseText)) {
-				trains = JSON.parse(request.responseText);
-				callback(request.responseText);
-			} else {
-				callback(false);
-			}
-		} else if (request.status === 404) {
-			if (openWindow) {
-				openWindow.close();
-			}
-			infoWindow.setContent("404: Try again!");
-			infoWindow.open(map, marker);
-			openWindow = infoWindow;
-			return;
-		}
-	}
-	request.open("get", "https://rocky-taiga-26352.herokuapp.com/redline.json", true);
-	request.send();
-};
-
-function trainInfo(marker, i) {
-	schedule = [];
-	if (request.readyState == 4 && request.status == 200) {
-		trains = JSON.parse(request.responseText);
-		for (var i = 0; i < trains.TripList.Trips.length; i++) {
-			for (var j = 0; j < trains.TripList.Trips[i].Predictions.length; j++) {
-				if(trains.TripList.Trips[i].Predictions[j].Stop == marker.title) {
-					var time = trains.TripList.Trips[i].Predictions[j].Seconds;
-					var dest = trains.TripList.Trips[i].Destination;
-					schedule.push({time, dest});
-				}
-			}
-		}
-	}
-	if (openWindow) {
-		openWindow.close();
-	}
-	infoWindow.setContent(formatSchedule(marker, schedule));
-	infoWindow.open(map, marker);
-	openWindow = infoWindow;
-}
-
-function formatSchedule(marker, schedule) {
-	schedule = schedule.sort(byTime);
-	schedule = schedule.sort(byDest);
-	var text = "<p>" + marker.title + " Station Schedule:</p>";
-	for (var i = 0; i < schedule.length; i++) {
-		text += "\n <p>There is a train headed to " + schedule[i].dest +
-				", arriving in " + formatTime(schedule[i].time) + ".</p>";
-	}
-	return text;
-}
-
-function byTime(a, b) {
-	if (a.time < b.time) {
-		return -1;
-	} else if (a.time > b.time) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-function byDest(a, b) {
-	if (a.dest < b.dest) {
-		return -1;
-	} else if (a.dest > b.dest) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-function formatTime(seconds) {
-	min = parseInt(seconds / 60);
-	sec = seconds % 60;
-	if (min == 1) {
-		if (sec == 1) {
-			return min + " minute and " + sec + " second";
-		} else if (sec == 0) {
-			return min + " minute";
-		} else {
-			return min + " minute and " + sec + " seconds";
-		}
-	} else if (min == 0) {
-		if (sec == 1) {
-			return sec + " second";
-		} else if (sec == 0) {
-			return "no time at all!";
-		} else {
-			return sec + " seconds";
-		}
-	} else {
-		if (sec == 1) {
-			return min + " minutes and " + sec + " second";
-		} else if (sec == 0) {
-			return min + " minutes";
-		} else {
-			return min + " minutes and " + sec + " seconds";
-		}
-	}
-}
-
-function addMyMarker() {
-	var here = {
-		url: "location.png",
-		size: new google.maps.Size(24, 24),
-		origin: new google.maps.Point(0, 0),
-		anchor: new google.maps.Point(12, 23)
-	};
-
-	var hereShape = {
-		coords: [1, 12,  12, 1,  23, 12,  12, 23],
-		type: "poly"
-	};
-
-	var hereMarker = new google.maps.Marker({
-		position: myLoc,
-		map: map,
-		icon: here,
-		shape: hereShape,
-		title: "You are here",
-		zIndex: 23
-	});
-
-	google.maps.event.addListener(hereMarker, "click", function() {
-		if (openWindow) {
-			openWindow.close();
-		}
-		infoWindow.setContent("The closest Red Line station to you is " +
-			closestStation[0] + ", at " + closestStation[1] + " miles away.");
-		infoWindow.open(map, hereMarker);
-		openWindow = infoWindow;
-	});
-}
-
+// add red lines between all the stops
 function addPolylines() {
 	var alewife_ashmont = [
 		{lat: stops[0][1], lng: stops[0][2]},
@@ -312,10 +133,41 @@ function addPolylines() {
 	closestLine.setMap(map);
 };
 
-function toRadians(x) {
-	return x * Math.PI / 180;
+// add marker/listener at your location
+function addMyMarker() {
+	var here = {
+		url: "location.png",
+		size: new google.maps.Size(24, 24),
+		origin: new google.maps.Point(0, 0),
+		anchor: new google.maps.Point(12, 23)
+	};
+
+	var hereShape = {
+		coords: [1, 12,  12, 1,  23, 12,  12, 23],
+		type: "poly"
+	};
+
+	var hereMarker = new google.maps.Marker({
+		position: myLoc,
+		map: map,
+		icon: here,
+		shape: hereShape,
+		title: "You are here",
+		zIndex: 23
+	});
+
+	google.maps.event.addListener(hereMarker, "click", function() {
+		if (openWindow) {
+			openWindow.close();
+		}
+		infoWindow.setContent("The closest Red Line station to you is " +
+			closestStation[0] + ", at " + closestStation[1] + " miles away.");
+		infoWindow.open(map, hereMarker);
+		openWindow = infoWindow;
+	});
 }
 
+// determine which station is closest to you
 function findClosestStation() {
 	for (i = 0; i < stops.length; i++) {
 		var dist = haversine(toRadians(myLoc.lat), toRadians(myLoc.lng),
@@ -329,6 +181,14 @@ function findClosestStation() {
 	closestStation = [stops[minIdx][0], Math.round(minDist * 1000) / 1000];
 };
 
+// convert degrees (lat, lng) to radians for calculations
+function toRadians(x) {
+	return x * Math.PI / 180;
+}
+
+// based on stack overflow: 
+// http://stackoverflow.com/questions/14560999/using-the-haversine-formula-in-javascript
+// find the distance (in miles) between two (lat, lng) points
 function haversine(lat1, lng1, lat2, lng2) {
 	var distLat = lat2 - lat1;
 	var distLng = lng2 - lng1;
@@ -339,4 +199,160 @@ function haversine(lat1, lng1, lat2, lng2) {
 	var d = 6371 * c;
 
 	return d;
+}
+
+// add T stop markers
+function addMarkers() {
+	var icon = {
+		url: "icon.png",
+		size: new google.maps.Size(20, 20),
+		origin: new google.maps.Point(0, 0),
+		anchor: new google.maps.Point(10, 10)
+	};
+
+	var iconShape = {
+		coords: [1, 10,  10, 1,  19, 10,  10, 19],
+		type: "poly"
+	};
+
+	var marker
+
+	for (var i = 0; i < stops.length; i++) {
+		var stop = stops[i];
+		marker = new google.maps.Marker({
+			position: {lat: stop[1], lng: stop[2]},
+			map: map,
+			icon: icon,
+			shape: iconShape,
+			title: stop[0],
+			zIndex: stop[3]
+		});
+
+		(function(marker, i) {
+			google.maps.event.addListener(marker, "click", function() {
+				if (openWindow) {
+					openWindow.close();
+				}
+				getApiData(marker, i, function(data) {
+					if (trains != false) {
+						trainInfo(marker, i);
+						infoWindow.open(map, marker);
+						openWindow = infoWindow;
+					}
+				});
+			});
+		})(marker, i);
+	}
+}
+
+// retrieve MBTA JSON data from herokuapp
+function getApiData(marker, i, callback) {
+	request.onreadystatechange = function() {
+		if (request.readyState === 4 && request.status === 200) {
+			if (request.responseText != "" && (request.responseText)) {
+				trains = JSON.parse(request.responseText);
+				callback(request.responseText); // data was found
+			} else {
+				callback(false); // no response yet, try again
+			}
+		} else if (request.status === 404) {	// data was not found
+			if (openWindow) {
+				openWindow.close();
+			}
+			infoWindow.setContent("404: Try again!");
+			infoWindow.open(map, marker);
+			openWindow = infoWindow;
+			return;
+		}
+	}
+	request.open("get", "https://rocky-taiga-26352.herokuapp.com/redline.json", true);
+	request.send();
+};
+
+// get data on all trains that will arrive at a given station
+function trainInfo(marker, i) {
+	schedule = [];
+	if (request.readyState == 4 && request.status == 200) {
+		trains = JSON.parse(request.responseText);
+		for (var i = 0; i < trains.TripList.Trips.length; i++) {
+			for (var j = 0; j < trains.TripList.Trips[i].Predictions.length; j++) {
+				if(trains.TripList.Trips[i].Predictions[j].Stop == marker.title) {
+					var time = trains.TripList.Trips[i].Predictions[j].Seconds;
+					var dest = trains.TripList.Trips[i].Destination;
+					schedule.push({time, dest});	// collect station times and destinations
+				}
+			}
+		}
+	}
+	if (openWindow) {
+		openWindow.close();
+	}
+	infoWindow.setContent(formatSchedule(marker, schedule));  // make schedule
+	infoWindow.open(map, marker);
+	openWindow = infoWindow;
+}
+
+// convert the given array into an HTML string
+function formatSchedule(marker, schedule) {
+	schedule = schedule.sort(byTime);	// sort so it's ordered by dest, then time
+	schedule = schedule.sort(byDest);
+	var text = "<p>" + marker.title + " Station Schedule:</p>";
+	for (var i = 0; i < schedule.length; i++) {		// assemble text
+		text += "\n <p>There is a train headed to " + schedule[i].dest +
+				" arriving in " + formatTime(schedule[i].time) + ".</p>";
+	}
+	return text;
+}
+
+// sort array by time parameter
+function byTime(a, b) {
+	if (a.time < b.time) {
+		return -1;
+	} else if (a.time > b.time) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+// sort array by dest parameter
+function byDest(a, b) {
+	if (a.dest < b.dest) {
+		return -1;
+	} else if (a.dest > b.dest) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+// convert seconds to minutes, seconds with formatting
+function formatTime(seconds) {
+	min = parseInt(seconds / 60);
+	sec = seconds % 60;
+	if (min == 1) {
+		if (sec == 1) {
+			return min + " minute and " + sec + " second";
+		} else if (sec == 0) {
+			return min + " minute";
+		} else {
+			return min + " minute and " + sec + " seconds";
+		}
+	} else if (min == 0) {
+		if (sec == 1) {
+			return sec + " second";
+		} else if (sec == 0) {
+			return "no time at all!";
+		} else {
+			return sec + " seconds";
+		}
+	} else {
+		if (sec == 1) {
+			return min + " minutes and " + sec + " second";
+		} else if (sec == 0) {
+			return min + " minutes";
+		} else {
+			return min + " minutes and " + sec + " seconds";
+		}
+	}
 }
