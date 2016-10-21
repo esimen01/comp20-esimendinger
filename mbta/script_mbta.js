@@ -33,13 +33,7 @@ var minDist = 1000000;
 var request = new XMLHttpRequest();
 var trains = false;
 var err404 = false;
-
-// var idk = [];
-// idk.push("one");
-// idk.push("two");
-// idk.push("three");
-// idk.sort();
-// console.log(idk);
+var schedule;
 
 
 
@@ -103,19 +97,11 @@ function addMarkers() {
 		});
 
 		(function(marker, i) {
-			google.maps.event.addListener(marker, 'click', function() {
+			google.maps.event.addListener(marker, "click", function() {
 				if (openWindow) {
 					openWindow.close();
 				}
 				getApiData(marker, i, function(data) {
-					if (request.status === 404) {
-						if (openWindow) {
-							openWindow.close();
-						}
-						infoWindow.setContent("404: Try again!");
-						infoWindow.open(map, marker);
-						openWindow = infoWindow;
-					}
 					if (trains != false) {
 						trainInfo(marker, i);
 						infoWindow.open(map, marker);
@@ -129,21 +115,17 @@ function addMarkers() {
 
 function getApiData(marker, i, callback) {
 	request.onreadystatechange = function() {
-		console.log(request.status);
 		if (request.readyState === 4 && request.status === 200) {
 			if (request.responseText != "" && (request.responseText)) {
-				console.log("made it to parse");
 				trains = JSON.parse(request.responseText);
 				callback(request.responseText);
 			} else {
-				console.log("not found!");
 				callback(false);
 			}
 		} else if (request.status === 404) {
 			if (openWindow) {
 				openWindow.close();
 			}
-			err404 = true;
 			infoWindow.setContent("404: Try again!");
 			infoWindow.open(map, marker);
 			openWindow = infoWindow;
@@ -154,29 +136,85 @@ function getApiData(marker, i, callback) {
 	request.send();
 };
 
-// function getTrainSchedule(marker, i) {
-// 	getApiData(marker, i, function() {
-// 		console.log(this);
-// 		// if (trains !== false) {
-// 		// 	console.log("3");
-// 		// 	callback(trainInfo(marker, i));
-// 		// } else {
-// 		// 	console.log("4");
-// 		// 	callback(false);
-// 		// }
-// 	});
-// }
-
 function trainInfo(marker, i) {
+	schedule = [];
 	if (request.readyState == 4 && request.status == 200) {
 		trains = JSON.parse(request.responseText);
-			console.log("Trains at: " + marker.title);
 		for (var i = 0; i < trains.TripList.Trips.length; i++) {
 			for (var j = 0; j < trains.TripList.Trips[i].Predictions.length; j++) {
 				if(trains.TripList.Trips[i].Predictions[j].Stop == marker.title) {
-					console.log(trains.TripList.Trips[i].Predictions[j].Seconds)
+					var time = trains.TripList.Trips[i].Predictions[j].Seconds;
+					var dest = trains.TripList.Trips[i].Destination;
+					schedule.push({time, dest});
 				}
 			}
+		}
+	}
+	if (openWindow) {
+		openWindow.close();
+	}
+	infoWindow.setContent(formatSchedule(marker, schedule));
+	infoWindow.open(map, marker);
+	openWindow = infoWindow;
+}
+
+function formatSchedule(marker, schedule) {
+	schedule = schedule.sort(byTime);
+	schedule = schedule.sort(byDest);
+	var text = "<p>" + marker.title + " Station Schedule:</p>";
+	for (var i = 0; i < schedule.length; i++) {
+		text += "\n <p>There is a train headed to " + schedule[i].dest +
+				", arriving in " + formatTime(schedule[i].time) + ".</p>";
+	}
+	return text;
+}
+
+function byTime(a, b) {
+	if (a.time < b.time) {
+		return -1;
+	} else if (a.time > b.time) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+function byDest(a, b) {
+	if (a.dest < b.dest) {
+		return -1;
+	} else if (a.dest > b.dest) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+function formatTime(seconds) {
+	min = parseInt(seconds / 60);
+	sec = seconds % 60;
+	if (min == 1) {
+		if (sec == 1) {
+			return min + " minute and " + sec + " second";
+		} else if (sec == 0) {
+			return min + " minute";
+		} else {
+			return min + " minute and " + sec + " seconds";
+		}
+	} else if (min == 0) {
+		if (sec == 1) {
+			return sec + " second";
+		} else if (sec == 0) {
+			return "no time at all!";
+		} else {
+			return sec + " seconds";
+		}
+	} else {
+		if (sec == 1) {
+			return min + " minutes and " + sec + " second";
+		} else if (sec == 0) {
+			return min + " minutes";
+		} else {
+			return min + " minutes and " + sec + " seconds";
 		}
 	}
 }
@@ -203,7 +241,7 @@ function addMyMarker() {
 		zIndex: 23
 	});
 
-	google.maps.event.addListener(hereMarker, 'click', function() {
+	google.maps.event.addListener(hereMarker, "click", function() {
 		if (openWindow) {
 			openWindow.close();
 		}
