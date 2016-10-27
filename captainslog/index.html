@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Captain's Log</title>
+    <link rel="stylesheet" href="style.css" /><link href="https://fonts.googleapis.com/css?family=IM+Fell+English+SC|Nothing+You+Could+Do|Trirong" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            refreshLog();
+            $(document).keypress(function(e) {
+                if (e.which == 13) {                    
+                    var today = new Date();
+                    var str = document.getElementById("msg").value;
+                    if (str == "--clear-log") {
+                        clearLog();
+                        refreshLog();
+                        return;
+                    }
+                    str = today.toString() + " - " + str;
+                    localStorage[today.getTime()] = str;
+                    refreshLog();
+                }
+            });
+
+            function clearLog() {
+                for (key in localStorage) {
+                    localStorage.removeItem(key);
+                }
+            }
+
+            function refreshLog() {
+                msgLog = "";
+                for (key in localStorage) {
+                    msgLog = "<p>" + localStorage[key] + "</p\n" + msgLog;
+                }
+                document.getElementById("log").innerHTML = msgLog;
+                document.getElementById("msg").value = "";
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Captain's Log</h1>
+    <h3>New entry: <input type="text" id="msg" name="msg" size="30" /></h3>
+    <div id="log"></div>
+</body>
+</html>

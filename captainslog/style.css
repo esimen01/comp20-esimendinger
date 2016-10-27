@@ -1,0 +1,27 @@
+h1 {
+	font-family: 'IM Fell English SC', serif;
+	font-size: 72px;
+	color: #444444;
+}
+
+h3 {
+	font-family: 'IM Fell English SC', serif;
+	font-size: 24px;
+	color: #444444;
+}
+
+body {
+	background-color: #e2ab68;
+}
+
+#msg {
+	background-color: #c1a881;
+	font-family: 'Nothing You Could Do', cursive;
+	font-size: 24px;
+}
+
+#log {
+	font-family: 'Trirong', serif;
+	font-size: 20px;
+	color: #090060;
+}
