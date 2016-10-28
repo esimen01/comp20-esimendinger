@@ -13,7 +13,7 @@
             $(document).keypress(function(e) {
                 if (e.which == 13) {                    
                     var today = new Date();
-                    var str = document.getElementById("msg").value;
+                    str = $("#msg").val();
                     if (str == "--clear-log") {
                         clearLog();
                         refreshLog();
@@ -32,12 +32,12 @@
             }
 
             function refreshLog() {
-                msgLog = "";
+                $("#log").html("");
                 for (key in localStorage) {
-                    msgLog = "<p>" + localStorage[key] + "</p\n" + msgLog;
+                    entry = "<p>" + localStorage[key] + "</p>\n";
+                    $("#log").prepend(entry);
                 }
-                document.getElementById("log").innerHTML = msgLog;
-                document.getElementById("msg").value = "";
+                $("#msg").val("");
             }
         });
     </script>
