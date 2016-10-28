@@ -8,36 +8,36 @@
     <link rel="stylesheet" href="style.css" /><link href="https://fonts.googleapis.com/css?family=IM+Fell+English+SC|Nothing+You+Could+Do|Trirong" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script>
-        $(document).ready(function(){
+        $(document).ready(function(){       // when everything has loaded
             refreshLog();
             $(document).keypress(function(e) {
-                if (e.which == 13) {                    
-                    var today = new Date();
-                    str = $("#msg").val();
-                    if (str == "--clear-log") {
+                if (e.which == 13) {            // press enter key
+                    var today = new Date();     
+                    str = $("#msg").val();      // get input text
+                    if (str == "--clear-log") { // to clear the log
                         clearLog();
                         refreshLog();
                         return;
                     }
-                    str = today.toString() + " - " + str;
-                    localStorage[today.getTime()] = str;
-                    refreshLog();
+                    str = today.toString() + " - " + str;   // format the log
+                    localStorage[today.getTime()] = str;    // add to local storage
+                    refreshLog();                           // update html
                 }
             });
 
             function clearLog() {
                 for (key in localStorage) {
-                    localStorage.removeItem(key);
+                    localStorage.removeItem(key);           // clear local storage
                 }
             }
 
             function refreshLog() {
-                $("#log").html("");
+                $("#log").html("");                 // reset div text
                 for (key in localStorage) {
                     entry = "<p>" + localStorage[key] + "</p>\n";
-                    $("#log").prepend(entry);
+                    $("#log").prepend(entry);       // add entry to top
                 }
-                $("#msg").val("");
+                $("#msg").val("");                  // reset input box text
             }
         });
     </script>
