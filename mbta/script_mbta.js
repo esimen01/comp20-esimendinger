@@ -265,7 +265,7 @@ function getApiData(marker, i, callback) {
 			return;
 		}
 	}
-	request.open("get", "https://rocky-taiga-26352.herokuapp.com/redline.json", true);
+	request.open("get", "https://aqueous-beyond-90325.herokuapp.com/redline.json", true);
 	request.send();
 };
 
