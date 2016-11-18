@@ -1,0 +1,13 @@
+{
+  "name": "2048-game-center",
+  "version": "0.0.1",
+  "description": "Node.js app to keep track of 2048 scores",
+  "engines": {
+  	"node": "latest"
+  },
+  "dependencies": {
+    "express": "latest",
+    "body-parser": "latest",
+    "mongodb": "latest"
+  }
+}
