@@ -7,7 +7,7 @@
 ########## Completion ##########
 To the best of my knowledge, all aspects of the assignment have been correctly
 implemented. Files index.js, package.json, and Procfile are all present, as 
-well as the modified files from the original 2048 game, game_manager.html and 
+well as the modified files from the original 2048 game, game_manager.js and 
 index.html. Scores are sent to the server through a post method (/submit.
 json), and scores can be retrieved through a get method (/scores.json). The 
 latter allows for a particular username to be entered in the URL as a query 
