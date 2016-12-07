@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf8">
+		<title>Security and Privacy Assessment of Assignment 3</title>
+	</head>
+	<body>
+		<h1>Security and Privacy Assessment of Assignment 3</h1>
+		<h2>Edward Simendinger - 6 December 2016</h2>
+
+		<h2>Introduction</h2>
+		<p>The following will be a security assessment of <a href="https://intense-waters-94287.herokuapp.com/">https://intense-waters-94287.herokuapp.com/</a>, a web application that stores user scores and grids for the popular 2048 game. Since the original version of the game does not store any game information other than the high score of the current session, this allows for users to better keep track of their statistics, as well as having access to the final grid of each round. The application was developed by Yichuan Ma, and it is a basic Node.js server that communicates with the 2048 game by sending JSON data via HTTP requests.</p>
+
+		<p>I was hired to investigate the security and privacy issues with this application. Can users with malicious intent break the application? Can they gain access to data that should be private? Can they send in malformed data that could harm the database and the server? These are all important questions to consider, as any application that has these issues should not be released for public use.</p>
+
+		<h2>Methodology</h2>
+		<p>The first method of testing the application that I took was the black box method: don't look at the source code, and try to break the app through general use. This consisted of playing the 2048 game and trying to input malicious code via the username input box, and also trying to send malformed data via <code>curl</code>.</p>
+
+		<p>The second testing method was the white box, which involved looking at the source code and determining if there are any visible vulnerabilities that way. This method can pick up on flaws missed by the black box method because the tester can now see exactly how each process is performed, which is not visible strictly from the user interface.</p>
+
+		<p>The final method used was performing a static scan on the application. This was done using <a href="https://analysiscenter.veracode.com/auth/index.jsp">Veracode</a>, which analyzes all of the source code for an application and highlights any flaws or other security warnings. Static scans are good at picking up on smaller details that might not be apparent to the tester, even when reading the source code.</p>
+
+		<h2>Abstract of Findings</h2>
+		<ol>
+			<li>The application accepts data inputs from all origins, not just the 2048 game. This means that users with malicious intent can send data to the server through other methods such as <code>curl</code> and potentially flood the database.</li>
+			<li>A user can manually send a request to the server with malicious code in place of the grid, which will then be executed when getting the score history for that username.</li>
+			<li>A proxy interceptor like Burp Suite can be used to obtain the page's data before it's sent to the browser and it can be modified. This can similarly allow for the execution of malicious code.</li>
+		</ol>
+
+		<h2>Issues Found</h2>
+		<ol>
+			<li>Cross-Site Request Forgery
+			<ul>
+				<li>Issue: cross-site request forgery vulnerability</li>
+				<li>Location: index.js:52</li>
+				<li>Severity: High (A user can flood the database with potentially harmful data, thus damaging the server)</li>
+				<li>Description: This issue was found by using <code>curl</code> to <code>POST</code> data to the server via the command line. Since it was accepted, that means that the server accepts input from origins other than the 2048 game. This is due to the <code>*</code> operator in <code>response.header("Access-Control-Allow-Origin", "*")</code>, found in index.js on line 52.</li>
+				<li>Proof: <br>
+					<img src="curl-xss.png" alt="Curl data">
+				</li>
+				<li>Resolution: This issue could be mitigated by specifying the 2048 client in the response header instead of allowing all origins. For example, <code>response.header("Access-Control-Allow-Origin", "2048_game_URL")</code>.</li>
+			</ul>
+			</li>
+
+			<li>Cross-Site Scripting
+			<ul>
+				<li>Issue: cross-site scripting vulnerability</li>
+				<li>Location: index.js:80</li>
+				<li>Severity: High (Allows for execution of malicious code which can harm the server)</li>
+				<li>Description: This issue was found by sending data to the server with JavaScript code in each parameter of the JSON object. The <code>username</code> value was sanitized using a regular expression and the <code>score</code> value was sanitized as a side effect of <code>parseInt()</code>, but the <code>grid</code> value was sent unaltered into the database. A user can use a tool like <code>curl</code> to send data to the server with JavaScript code in the <code>grid</code> value.</li>
+				<li>Proof: <br>
+					<img src="curl-xss.png" alt="XSS in grid input">
+					<img src="h4ck3d.png" alt="Hacked">
+				</li>
+				<li>Resolution: This issue could be mitigated by performing a similar sanitization technique as used for the <code>username</code> value on the <code>grid</code> value, but only removing the script tags. For example, <code>grid = request.body.grid.replaceAll("<[^>]*>", "")</code>.</li>
+			</ul>
+			</li>
+
+			<li>Proxy Data Manipulation
+			<ul>
+				<li>Issue: proxy data manipulation</li>
+				<li>Location: general</li>
+				<li>Severity: High (any/all of the site data can be modified on the user's end, and users have access to some client-side information)</li>
+				<li>Description: This issue was found using Burp Suite to intercept HTTP requests and modify the data before it is sent. This can allow for many cross-site scripting attacks.</li>
+				<li>Proof: <br>
+					<img src="burp.png" alt="Burp Suite">
+					<img src="pwned.png" alt="XSS with Burp Suite">
+				</li>
+				<li>Resolution: Blacklist users who are sending in suspicious data (not the most effective way, but this is a very difficult issue to prevent).</li>
+			</ul>
+			</li>
+		</ol>
+
+		<h2>Conclusion</h2>
+		<p>Make sure to sanitize all inputs (and outputs) as much as possible, because there are so many ways and places in the request-response procedure where data can be corrupted or malicious data can be submitted. Also, consider where the requests being sent to the app are coming from, and restrict the CORS <code>Access-Control-Allow-Origin</code> values to only the origins needed. These are fairly simple to do, and will make the application much more secure.</p>
+	</body>
+</html>
